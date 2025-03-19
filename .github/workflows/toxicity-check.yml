@@ -2,8 +2,7 @@ name: Check for Toxic Content
 
 on:
   pull_request:
-    paths:
-      - "**.html"  
+    types: [opened, synchronize, reopened]
 
 jobs:
   moderate-content:
@@ -27,8 +26,14 @@ jobs:
       - name: Install dependencies
         run: pip install transformers torch  
 
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v35  # Detecta archivos modificados en la PR
+        with:
+          files: "**/*.html"
+
       - name: Run toxicity check
-        run: python scripts/check_toxicity.py
+        run: python scripts/check_toxicity.py ${{ steps.changed-files.outputs.all_modified_files }}
 
       - name: Auto-approve PR if no offensive content is found
         if: success()
@@ -37,7 +42,11 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Comment on PR if offensive content is detected
-        if: failure()
+        if: always() && steps.changed-files.outputs.all_modified_files != ''
+        run: echo "🚨 Offensive content detected. Please review your PR." | tee comment.txt
+
+      - name: Post comment on PR
+        if: always() && steps.changed-files.outputs.all_modified_files != ''
         uses: thollander/actions-comment-pull-request@v2
         with:
-          message: "🚨 Offensive content detected. Please review your PR."
+          message: file://comment.txt
