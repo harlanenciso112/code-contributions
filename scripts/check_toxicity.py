@@ -1,23 +1,41 @@
 import sys
 import os
 from transformers import pipeline
+from bs4 import BeautifulSoup
 
-# Load the toxicity detection model from Hugging Face
+# Load the toxicity detection model
 classifier = pipeline("text-classification", model="unitary/toxic-bert")
 
+def extract_text_from_html(file_path):
+    """Extract visible text from an HTML file."""
+    with open(file_path, "r", encoding="utf-8") as file:
+        content = file.read()
+    soup = BeautifulSoup(content, "html.parser")
+    return soup.get_text(separator=" ").strip()  # Extract visible text
+
+def split_text(text, max_length=512):
+    """Split text into chunks of max_length tokens."""
+    words = text.split()
+    chunks = []
+    for i in range(0, len(words), max_length):
+        chunks.append(" ".join(words[i:i+max_length]))
+    return chunks
+
 def check_text(text):
-    result = classifier(text)  # Analyze the text
-    label = result[0]["label"]  # Get the label (e.g., "toxic", "severe_toxic")
-    score = result[0]["score"]  # Get the confidence score
-    
-    if label == "toxic" and score > 0.7:  # If toxic and confidence > 70%, block PR
-        return True
+    """Check if any part of the text is toxic."""
+    chunks = split_text(text)
+    for chunk in chunks:
+        result = classifier(chunk)  # Analyze the text
+        label = result[0]["label"]  # Get the label (e.g., "toxic", "severe_toxic")
+        score = result[0]["score"]  # Get the confidence score
+        if label == "toxic" and score > 0.7:
+            return True
     return False
 
 def check_file(file_path):
-    with open(file_path, "r", encoding="utf-8") as file:
-        content = file.read()
-        return check_text(content)
+    """Check if an HTML file contains toxic content."""
+    text = extract_text_from_html(file_path)
+    return check_text(text)
 
 def main():
     offensive_content_found = False
