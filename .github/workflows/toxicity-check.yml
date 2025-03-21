@@ -24,13 +24,13 @@ jobs:
           key: huggingface-toxicity-model
 
       - name: Install dependencies
-        run: pip install transformers torch beautifulsoup4
+        run: pip install transformers torch beautifulsoup4 python-magic
 
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v35  
         with:
-          files: "**/*.html"
+          files: "**/*"
 
       - name: Run toxicity check
         run: |
