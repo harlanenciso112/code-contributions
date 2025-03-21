@@ -1,7 +1,7 @@
 import sys
 import os
 from transformers import pipeline
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup # type: ignore
 
 # Load the toxicity detection model
 classifier = pipeline("text-classification", model="unitary/toxic-bert")
